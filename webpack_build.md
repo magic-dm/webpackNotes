@@ -79,7 +79,7 @@ webpack本质其实就是一个工具，是当今最流行的打包工具，没�
 2. **module的解析过程**
   1. 涉及两个比较重要的工厂方法：normalModuleFactory、contextModuleFactory，这个在准备阶段有提到过。normalModuleFactory用来创建NormalModule实例，这个工厂方法主要是解析module需要用到的一些属性，如需要用到的loaders、需要用到的resources等；
   1. NormalModule实例创建完成之后，build.module方法（./webpack/lib/Compilation.js）里会调用module.build方法进行内部构建，NormalModule实例内部记录了需要用到的loaders，通过直接调用第三方模块loader-runner去应用loader，然后在build方法（./webpack/lib/NormalModule.js）里，将loader处理后的module源码传给parser，这个parser是在工厂函数里边创建的，底层的Parser插件使用的是acorn（一个小型的JS解析器），他将JS代码解析成AST（抽象语法树）并返回；
-![image.png](https://intranetproxy.alipay.com/skylark/lark/0/2019/png/179805/1565322265573-d21cc6e1-af37-49e2-ad2f-4e2c83cb0efa.png#align=left&display=inline&height=118&name=image.png&originHeight=236&originWidth=907&size=59463&status=done&width=453.5)
+![image.png](./imgs/build_1.png)
   1. webpack拿到AST之后，就开始收集依赖了，webpack会遍历AST语法树，按照一定的规则触发钩子函数，由于webpack要兼容不同的依赖方式，这个地方的逻辑非常复杂，我们不做深究；
   1. module解析完成之后，会递归地调用他所依赖地modules进行解析，直到解析完所有地依赖modules，他们将被存储在Compilation的modules属性中，此时make钩子结束；
   1. make钩子执行完之后，立即执行seal钩子，seal方法里边，利用拿到所有的modules之后，webpack开始生成chunk，每个chunk的生成就是找到需要包含的modules。
@@ -87,7 +87,7 @@ webpack本质其实就是一个工具，是当今最流行的打包工具，没�
     1. 获取依赖的module，也加入到chunk中；
     1. 若一个依赖的module是动态引入的，就会新创建一个chunk，继续遍历依赖；
     1. 重复上边的步骤，直到得到所有的chunks；
-![image.png](https://intranetproxy.alipay.com/skylark/lark/0/2019/png/179805/1565337347289-ce4b1517-a461-49e5-a5c9-1c4998faf43b.png#align=left&display=inline&height=312&name=image.png&originHeight=623&originWidth=851&size=140899&status=done&width=425.5)
+![image.png](./imgs/build_2.png)
   6. chunks生成之后，webpack还会做一些优化动作，比如分配id、排序等，并会触发一些钩子，比如CommonsChunkPlugin插件会在optimize-chunks钩子上挂载一些处理逻辑，钩子被触发式就会执行相应的逻辑；
 
 
@@ -106,7 +106,7 @@ webpack本质其实就是一个工具，是当今最流行的打包工具，没�
 2. 调用createHash方法（./webpack/lib/Compilation.js），创建hash，我们看到的chunks文件名也来源于此；
 2. 最终会构建一个assets对象，里边存放着文件列表，包括每个文件的内容以及文件大小数据，至此，seal方法执行完毕；
 2. seal方法之后，触发compiler上的afterCompile钩子，这个钩子里边会调用emitAssets方法，并触发compiler的最后一个钩子emit，遍历compilation.assets（./webpack/lib/Compilation.js）将所有的chunks文件写入到制定路径下，然后触发done（./webpack-cli/lib/cli.js）；
-![image.png](https://intranetproxy.alipay.com/skylark/lark/0/2019/png/179805/1565340294802-fc77bc20-4e46-4385-a78f-4a239e6badb4.png#align=left&display=inline&height=206&name=image.png&originHeight=411&originWidth=830&size=78004&status=done&width=415)
+![image.png](./imgs/build_3.png)
 
 至此，webpack的基本构建流程已经结束，这只是对webpack有个概览，因此还还要对他做一些深入与补充。
 
